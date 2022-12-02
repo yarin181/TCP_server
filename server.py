@@ -102,6 +102,7 @@ def main():
             print("path:", "_",clientData._path,"_")
             print("connection:","_",clientData._Connection,"_")
             print(os.path.isfile("files"+clientData._path))
+
             if(clientData._path == "/redirect"):
                 client_socket.send((format_message_to_the_client(301,"Moved Permanently","close","/result.html")).encode())
                 client_socket.close()
@@ -112,7 +113,9 @@ def main():
             else:
                 client_socket.send((format_message_to_the_client(404,"Not Found","close",0)).encode())
                 client_socket.close()
+            
 
+            #check if the connection state is close .
             if(clientData == "close"):
                 client_socket.close()
                 print('Client disconnected')
