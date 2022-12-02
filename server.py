@@ -38,7 +38,7 @@ class ClientData:
         if (data_array[0])[4:-9] == "/":
             return "/index.html"
         else:
-            return (data_array[0])[6:-10]
+            return (data_array[0])[4:-9]
 
 def format_message_to_the_client(status_number,status,connection_status,content_length):
     """_summary_
@@ -74,10 +74,11 @@ def format_message_to_the_client(status_number,status,connection_status,content_
 
 
 def main():
+    #print(os.listdir("files/files"))
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(('', 12340))
+    server.bind(('', 12342))
     server.listen(5)
-
+    
     while True:
         client_socket, client_address = server.accept()
 
@@ -87,12 +88,15 @@ def main():
 
             print("path:", "_",clientData._path,"_")
             print("connection:","_",clientData._Connection,"_")
-
+            f = open("files"+clientData._path,"rb")
+            client_socket.send((format_message_to_the_client(200,"OK",clientData._Connection,f.__sizeof__)).encode())
+            client_socket.sendfile(f)
 
 
             if(clientData == "close"):
                 client_socket.close()
                 print('Client disconnected')
+
 
 
 if __name__ == "__main__":
