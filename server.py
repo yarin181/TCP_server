@@ -38,7 +38,7 @@ class ClientData:
         if (data_array[0])[4:-9] == "/":
             return "/index.html"
         else:
-            return (data_array[0])[6:-10]
+            return (data_array[0])[4:-9]
 
 def format_message_to_the_client(status_number,status,connection_status,content_length):
     """_summary_
@@ -68,31 +68,55 @@ def format_message_to_the_client(status_number,status,connection_status,content_
     if (status_number == 200):
         return "HTTP/1.1 {} {} \r\nConnection: {}\r\nContent-Length: {}\r\n\r\n".format(status_number,status,connection_status,content_length)
     if (status_number == 404):
-        return "HTTP/1.1 {} {} \r\nConnection: {}\r\n".format(status_number,status,connection_status)
+        return "HTTP/1.1 {} {} \r\nConnection: {}\r\n\r\n".format(status_number,status,connection_status)
     if (status_number == 301):
-        return "HTTP/1.1 {} {} \r\nConnection: {}\r\nLocation: /result.html\r\n".format(status_number,status,connection_status)
+        return "HTTP/1.1 {} {} \r\nConnection: {}\r\nLocation: {}\r\n\r\n".format(status_number,status,connection_status,content_length)
 
 
 def main():
+    #print(os.listdir("files/files"))
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(('', 12340))
+    server.bind(('', 12348))
     server.listen(5)
+
 
     while True:
         client_socket, client_address = server.accept()
+        #if the client won't send date within a second a timeoutError will raise.
+        client_socket.settimeout(1)
 
         while True:
-            data = (client_socket.recv(1024).decode()).split("\r\n")
+            try:
+                data = (client_socket.recv(1024).decode()).split("\r\n")
+            except TimeoutError:
+                client_socket.close()
+                #debug message
+                print('Client disconnected(timeout)')
+                break
+            if (len(data) == 0):
+                client_socket.close()
+                break
             clientData  = ClientData(data)
 
+            #debug messages
             print("path:", "_",clientData._path,"_")
             print("connection:","_",clientData._Connection,"_")
-
-
+            print(os.path.isfile("files"+clientData._path))
+            if(clientData._path == "/redirect"):
+                client_socket.send((format_message_to_the_client(301,"Moved Permanently","close","/result.html")).encode())
+                client_socket.close()
+            elif (os.path.isfile("files"+clientData._path)):
+                f = open("files"+clientData._path,"rb")
+                client_socket.send((format_message_to_the_client(200,"OK",clientData._Connection,f.__sizeof__)).encode())
+                client_socket.sendfile(f)
+            else:
+                client_socket.send((format_message_to_the_client(404,"Not Found","close",0)).encode())
+                client_socket.close()
 
             if(clientData == "close"):
                 client_socket.close()
                 print('Client disconnected')
+
 
 
 if __name__ == "__main__":
