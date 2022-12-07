@@ -2,20 +2,18 @@ import socket
 import sys 
 import os
 
-class ClientData:
-    """_summary_ 
+""" _summary_ 
     this class stands for the relevant data that sends from the user which is it , the path of the file 
     and the connection state.
-    """
+"""
+class ClientData:
     def __init__(self,data_array):
         #on this location theres the path of the file.
         self._path = ClientData.find_path(data_array)
         #gets the connection state from find_connection func.
         self._Connection = ClientData.find_connection(data_array)
 
-    @staticmethod    
-    def find_connection(data_array):
-        """_summary_
+    """_summary_
             this function get data array and return the sate of the connection 
             label.
         Args:
@@ -24,8 +22,9 @@ class ClientData:
         Returns:
             _type_: string
             the connection state 
-
-        """
+    """
+    @staticmethod    
+    def find_connection(data_array):
         for data in data_array:
             #only if the label length is grater than 12 it could be the connection
             #label and than ensure its the right one by name.
@@ -40,9 +39,7 @@ class ClientData:
         else:
             return (data_array[0])[4:-9]
 
-def format_message_to_the_client(status_number,status,connection_status,content_length):
-    """_summary_
-
+"""_summary_
         This function arrange the inserted data in a http format for sending to the user.
     Args:
         status_number int:
@@ -61,10 +58,9 @@ def format_message_to_the_client(status_number,status,connection_status,content_
         content_length int: 
         the content length
 
-
-    return a appropriate string.
-    """
-
+    returns an appropriate string.
+"""
+def format_message_to_the_client(status_number,status,connection_status,content_length):
     if (status_number == 200):
         return "HTTP/1.1 {} {} \r\nConnection: {}\r\nContent-Length: {}\r\n\r\n".format(status_number,status,connection_status,content_length)
     if (status_number == 404):
@@ -74,11 +70,14 @@ def format_message_to_the_client(status_number,status,connection_status,content_
 
 
 def main():
-    #print(os.listdir("files/files"))
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(('', 12348))
-    server.listen(5)
+    
+    if len(sys.argv) != 2:
+        server.close()
+        sys.exit(1)
 
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(('', int(sys.argv[1])))
+    server.listen(5)
 
     while True:
         client_socket, client_address = server.accept()
@@ -87,37 +86,42 @@ def main():
 
         while True:
             try:
-                data = (client_socket.recv(1024).decode()).split("\r\n")
+                data = client_socket.recv(4096).decode()
+                splitted_data = data.split("\r\n")
             except TimeoutError:
-                client_socket.close()
                 #debug message
-                print('Client disconnected(timeout)')
+                print('Client disconnected(timeout)', client_address)
                 break
             if (len(data) == 0):
-                client_socket.close()
                 break
-            clientData  = ClientData(data)
+
+            # print the request
+            print(data)
+
+            clientData  = ClientData(splitted_data)
+            isFile = os.path.isfile("files"+clientData._path)
 
             #debug messages
-            print("path:", "_",clientData._path,"_")
-            print("connection:","_",clientData._Connection,"_")
-            print(os.path.isfile("files"+clientData._path))
+            #print("path:", "_",clientData._path,"_")
+            #print("connection:","_",clientData._Connection,"_")
+            #print(isFile)
+            
             if(clientData._path == "/redirect"):
                 client_socket.send((format_message_to_the_client(301,"Moved Permanently","close","/result.html")).encode())
-                client_socket.close()
-            elif (os.path.isfile("files"+clientData._path)):
+                break
+            elif isFile:
                 f = open("files"+clientData._path,"rb")
                 client_socket.send((format_message_to_the_client(200,"OK",clientData._Connection,f.__sizeof__)).encode())
                 client_socket.sendfile(f)
             else:
                 client_socket.send((format_message_to_the_client(404,"Not Found","close",0)).encode())
-                client_socket.close()
+                break
 
             if(clientData == "close"):
-                client_socket.close()
                 print('Client disconnected')
+                break
 
-
+        client_socket.close()
 
 if __name__ == "__main__":
     main()
