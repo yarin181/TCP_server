@@ -11,7 +11,7 @@ class ClientData:
         #on this location theres the path of the file.
         self._path = ClientData.find_path(data_array)
         #gets the connection state from find_connection func.
-        self._Connection = ClientData.find_connection(data_array)
+        self._connection = ClientData.find_connection(data_array)
 
     """_summary_
             this function get data array and return the sate of the connection 
@@ -90,7 +90,7 @@ def main():
                 splitted_data = data.split("\r\n")
             except TimeoutError:
                 #debug message
-                print('Client disconnected(timeout)', client_address)
+                #print('Client disconnected(timeout)', client_address)
                 break
             if (len(data) == 0):
                 break
@@ -111,13 +111,13 @@ def main():
                 break
             elif isFile:
                 f = open("files"+clientData._path,"rb")
-                client_socket.send((format_message_to_the_client(200,"OK",clientData._Connection,f.__sizeof__)).encode())
+                client_socket.send((format_message_to_the_client(200,"OK",clientData._connection,f.__sizeof__)).encode())
                 client_socket.sendfile(f)
             else:
                 client_socket.send((format_message_to_the_client(404,"Not Found","close",0)).encode())
                 break
-
-            if(clientData == "close"):
+            if(clientData._connection == "close"):
+                # debug message
                 print('Client disconnected')
                 break
 
