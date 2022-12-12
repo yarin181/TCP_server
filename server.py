@@ -1,6 +1,9 @@
 import socket
 import sys 
 import os
+import time 
+BUFFER_SIZE = 1024
+REQUEST_SEPARATOR = "/r/n/r/n"
 
 """ _summary_ 
     this class stands for the relevant data that sends from the user which is it , the path of the file 
@@ -82,47 +85,50 @@ def main():
     while True:
         client_socket, client_address = server.accept()
         #if the client won't send date within a second a timeoutError will raise.
-        client_socket.settimeout(1)
 
         while True:
+            client_socket.settimeout(1)
             try:
-                data = client_socket.recv(4096).decode()
+                time.sleep(5)
+                data = client_socket.recv(BUFFER_SIZE).decode()
                 splitted_data = data.split("\r\n")
+
+                if (len(data) == 0):
+                    client_socket.close()
+                    break
+                
+                # print the request
+                print(data)
+
+                clientData  = ClientData(splitted_data)
+                isFile = os.path.isfile("files"+clientData._path)
+                if(clientData._path == "/redirect"):
+                    client_socket.send((format_message_to_the_client(301,"Moved Permanently","close","/result.html")).encode())
+                    client_socket.close()
+                    break
+                elif isFile:
+                    filepath = "files" + clientData._path
+                    f = open("files"+clientData._path,"rb")
+                    binaryFile = f.read()
+                    f.close()
+                    dataToSend = format_message_to_the_client(200,"OK",clientData._connection,os.stat(filepath).st_size)
+                    client_socket.send(dataToSend.encode() + binaryFile)
+                else:
+                    client_socket.send((format_message_to_the_client(404,"Not Found","close",0)).encode())
+                    client_socket.close()
+                    break
+                if(clientData._connection == "close"):
+                    # debug message
+                    #print('Client disconnected')
+                    client_socket.close()
+                    break
+
             except TimeoutError:
                 #debug message
                 #print('Client disconnected(timeout)', client_address)
+                client_socket.close()
                 break
-            if (len(data) == 0):
-                break
-
-            # print the request
-            print(data)
-
-            clientData  = ClientData(splitted_data)
-            isFile = os.path.isfile("files"+clientData._path)
-
-            #debug messages
-            #print("path:", "_",clientData._path,"_")
-            #print("connection:","_",clientData._Connection,"_")
-            #print(isFile)
             
-            if(clientData._path == "/redirect"):
-                client_socket.send((format_message_to_the_client(301,"Moved Permanently","close","/result.html")).encode())
-                break
-            elif isFile:
-                filepath = "files" + clientData._path
-                f = open("files"+clientData._path,"rb")
-                client_socket.send((format_message_to_the_client(200,"OK",clientData._connection,os.stat(filepath).st_size)).encode())
-                client_socket.sendfile(f)
-            else:
-                client_socket.send((format_message_to_the_client(404,"Not Found","close",0)).encode())
-                break
-            if(clientData._connection == "close"):
-                # debug message
-                #print('Client disconnected')
-                break
-
-        client_socket.close()
 
 if __name__ == "__main__":
     main()
