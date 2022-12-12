@@ -82,7 +82,7 @@ def main():
     while True:
         client_socket, client_address = server.accept()
         #if the client won't send date within a second a timeoutError will raise.
-        client_socket.settimeout(5)
+        client_socket.settimeout(1)
 
         while True:
             try:
@@ -90,7 +90,7 @@ def main():
                 splitted_data = data.split("\r\n")
             except TimeoutError:
                 #debug message
-                print('Client disconnected(timeout)', client_address)
+                #print('Client disconnected(timeout)', client_address)
                 break
             if (len(data) == 0):
                 break
@@ -119,7 +119,7 @@ def main():
                 break
             if(clientData._connection == "close"):
                 # debug message
-                print('Client disconnected')
+                #print('Client disconnected')
                 break
 
         client_socket.close()
