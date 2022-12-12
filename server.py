@@ -82,7 +82,7 @@ def main():
     while True:
         client_socket, client_address = server.accept()
         #if the client won't send date within a second a timeoutError will raise.
-        client_socket.settimeout(1)
+        client_socket.settimeout(5)
 
         while True:
             try:
@@ -90,7 +90,7 @@ def main():
                 splitted_data = data.split("\r\n")
             except TimeoutError:
                 #debug message
-                #print('Client disconnected(timeout)', client_address)
+                print('Client disconnected(timeout)', client_address)
                 break
             if (len(data) == 0):
                 break
@@ -110,8 +110,9 @@ def main():
                 client_socket.send((format_message_to_the_client(301,"Moved Permanently","close","/result.html")).encode())
                 break
             elif isFile:
+                filepath = "files" + clientData._path
                 f = open("files"+clientData._path,"rb")
-                client_socket.send((format_message_to_the_client(200,"OK",clientData._connection,f.__sizeof__)).encode())
+                client_socket.send((format_message_to_the_client(200,"OK",clientData._connection,os.stat(filepath).st_size)).encode())
                 client_socket.sendfile(f)
             else:
                 client_socket.send((format_message_to_the_client(404,"Not Found","close",0)).encode())
