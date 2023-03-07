@@ -14,9 +14,9 @@ REQUEST_SEPARATOR = "\r\n\r\n"
 class ClientData:
     def __init__(self, data_array):
         # on this location theres the path of the file.
-        self._path = ClientData.find_path(data_array)
+        self.path = ClientData.find_path(data_array)
         # gets the connection state from find_connection func.
-        self._connection = ClientData.find_connection(data_array)
+        self.connectionState = ClientData.find_connection(data_array)
 
     """_summary_
             this function get data array and return the sate of the connection 
@@ -35,7 +35,7 @@ class ClientData:
             # only if the label length is grater than 12 it could be the connection
             # label and than ensure its the right one by name.
             # finlay return the connection state string.
-            if (len(data) > 12 and data[:10] == "Connection"):
+            if len(data) > 12 and data[:10] == "Connection":
                 return data[12:]
 
     @staticmethod
@@ -44,6 +44,18 @@ class ClientData:
             return "/index.html"
         else:
             return (data_array[0])[4:-9]
+
+    # @property
+    # def path(self):
+    #     return self.path
+
+    @property
+    def connection(self):
+        return self.connectionState
+
+    # @path.setter
+    # def path(self, value):
+    #     self.path = value
 
 
 """_summary_
@@ -70,20 +82,19 @@ class ClientData:
 
 
 def format_message_to_the_client(status_number, status, connection_status, content_length):
-    if (status_number == 200):
+    if status_number == 200:
         return "HTTP/1.1 {} {} \r\nConnection: {}\r\nContent-Length: {}\r\n\r\n".format(status_number, status,
                                                                                         connection_status,
                                                                                         content_length)
-    if (status_number == 404):
+    if status_number == 404:
         return "HTTP/1.1 {} {} \r\nConnection: {}\r\n\r\n".format(status_number, status, connection_status)
-    if (status_number == 301):
+    if status_number == 301:
         return "HTTP/1.1 {} {} \r\nConnection: {}\r\nLocation: {}\r\n\r\n".format(status_number, status,
                                                                                   connection_status, content_length)
 
 
 def main():
     if len(sys.argv) != 2:
-        server.close()
         sys.exit(1)
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -99,7 +110,7 @@ def main():
             try:
                 received_data = client_socket.recv(BUFFER_SIZE).decode()
 
-                if (len(received_data) == 0):
+                if len(received_data) == 0:
                     client_socket.close()
                     current_client_flag = False
                     break
@@ -111,21 +122,21 @@ def main():
                     total_data = partitioned_data[2]
 
                     print(current_request)
-
-                    clientData = ClientData(current_request.split("\r\n"))
-                    isFile = os.path.isfile("files" + clientData._path)
-                    if (clientData._path == "/redirect"):
+                    splitData = current_request.split("\r\n")
+                    clientData = ClientData(splitData)
+                    isFile = os.path.isfile("files" + clientData.path)
+                    if clientData.path == "/redirect":
                         client_socket.send(
                             (format_message_to_the_client(301, "Moved Permanently", "close", "/result.html")).encode())
                         client_socket.close()
                         current_client_flag = False
                         break
                     elif isFile:
-                        filepath = "files" + clientData._path
-                        f = open("files" + clientData._path, "rb")
+                        filepath = "files" + clientData.path
+                        f = open("files" + clientData.path, "rb")
                         binaryFile = f.read()
                         f.close()
-                        dataToSend = format_message_to_the_client(200, "OK", clientData._connection,
+                        dataToSend = format_message_to_the_client(200, "OK", clientData.connectionState,
                                                                   os.stat(filepath).st_size)
                         client_socket.send(dataToSend.encode() + binaryFile)
                     else:
@@ -133,11 +144,11 @@ def main():
                         client_socket.close()
                         current_client_flag = False
                         break
-                    if (clientData._connection == "close"):
+                    if clientData.connection == "close":
                         client_socket.close()
                         current_client_flag = False
                         break
-            except TimeoutError:
+            except socket.timeout:
                 client_socket.close()
                 break
 
