@@ -11,7 +11,7 @@ This is a simple HTTP server written in Python that serves static files from the
 
 1.  Clone the repository to your local machine.
 2.  Navigate to the project directory.
-3.  Run the command `python3 http_server.py <port_number>` where `port_number` is the port you want to use for the server.
+3.  Run the command `python3 server.py <port_number>` where `port_number` is the port you want to use for the server.
 4.  Open a web browser and navigate to `http://localhost:[path]<port_number>` to see the server in action, by leaving the path empty you will get the home page , you can also insert a pathe from the files folder (e.g `c/Footube.html`).
 
 ## Code Explanation
